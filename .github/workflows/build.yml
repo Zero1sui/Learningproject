@@ -30,16 +30,14 @@ jobs:
           python-version: '3.x'
 
       - name: Install Dependencies
-        run: |
-          pip install requests
+        run: pip install requests
 
-      - name: Send a message to Telegram
+      - name: Send Start Message
         env:
           BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
-        run: |
-          python ./.github/workflows/notify_telegram.py
+        run: python ./.github/workflows/notify_telegram.py
         continue-on-error: true
 
   build_debug:
@@ -88,6 +86,7 @@ jobs:
     name: Send Debug APKs to Telegram
     needs: build_debug
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v6
 
@@ -104,8 +103,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install Dependencies
-        run: |
-          pip install telethon
+        run: pip install telethon requests
 
       - name: Get Git Commit Info
         run: |
@@ -114,7 +112,6 @@ jobs:
 
       - name: Restore Telegram session cache
         uses: actions/cache@v5
-        id: telegram_session_cache
         with:
           path: bot_session.session
           key: telegram-session-${{ runner.os }}-bot_session
@@ -127,6 +124,18 @@ jobs:
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
           APK_PATH: app/build/outputs/apk/download/*.apk
-        run: |
-          python ./.github/workflows/deploy_artifacts.py
+        run: python ./.github/workflows/deploy_artifacts.py
         continue-on-error: true
+
+  notifyFinished:
+    name: Notify Build Finished
+    needs: sendDebugToTelegram
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Finish Message
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d message_thread_id="${{ secrets.TELEGRAM_TOPIC_ID }}" \
+          -d text="✅ Build finished: ${{ github.repository }}%0ABranch: ${{ github.ref_name }}%0AStatus: ${{ needs.sendDebugToTelegram.result }}"
