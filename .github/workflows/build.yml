@@ -79,7 +79,7 @@ jobs:
       - name: Upload Debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: app-*-debug
+          name: app-mobile-universal-debug
           path: |
             app/build/outputs/apk/mobile/universal/debug/*.apk
             app/build/outputs/apk/mobileUniversal/debug/*.apk
@@ -94,9 +94,9 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v8
         with:
-          pattern: *-debug
+          pattern: app-mobile-universal-debug
           merge-multiple: true
-          path: app/build/outputs/apk/download/
+          path: app/build/outputs/apk/download
 
       - name: Set up Python 3
         uses: actions/setup-python@v6
@@ -125,7 +125,7 @@ jobs:
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-         
+          TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
           APK_PATH: app/build/outputs/apk/download/*.apk
         run: |
           python ./.github/workflows/deploy_artifacts.py
